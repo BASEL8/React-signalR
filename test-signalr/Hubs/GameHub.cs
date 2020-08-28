@@ -219,7 +219,7 @@ namespace test_signalr.Hubs {
             Match _match = GameData.Matches.Find (match => match.MatchId == matchId);
             User AuthAsCreator = GameData.Users.Find (user => user.UserId == _match.Creator.UserId && user.Token == Context.ConnectionId);
             User AuthAsOpponent = GameData.Users.Find (user => user.UserId == _match.Opponent.UserId && user.Token == Context.ConnectionId);
-
+            GameData.AllOnlineGamesCount--;
             if (_match != null) {
                 if (AuthAsCreator != null || AuthAsOpponent != null) {
                     User _creator = GameData.Users.Find (user => user.UserId == _match.Creator.UserId);
@@ -298,6 +298,7 @@ namespace test_signalr.Hubs {
                 if (matchRequestIndex > -1) {
                     _opponent.MatchRequests.RemoveAt (matchRequestIndex);
                     GameData.Matches.RemoveAt (index);
+                    GameData.AllOnlineGamesCount--;
                     string _opponentToken = GameData.Users.Find (user => user.UserId == _opponent.UserId).Token;
                     await Clients.Client (_opponentToken).SendAsync ("GameRequest", _opponent.MatchRequests);
                 }
@@ -449,6 +450,23 @@ namespace test_signalr.Hubs {
                     }
                 }
             }
+        }
+        public async Task GeneralInformation () {
+            //The global statics should show the total amount of games played in the system
+            //It should have a list of players saying how many games they won, lost and draw
+            int Total = GameData.AllGamesCount;
+            int OnlineMatches = GameData.Matches.FindAll (match => match.Started && match.End).Count;
+            List<User> Users = new List<User> () { };
+
+            foreach (var user in GameData.Users) {
+                User _user = new User ();
+                _user.Nickname = user.Nickname;
+                _user.TimesOfWins = user.TimesOfWins;
+                _user.Draws = user.Draws;
+                _user.MatchPlayed = user.MatchPlayed;
+                Users.Add (_user);
+            }
+            await Clients.Client (Context.ConnectionId).SendAsync ("Statics", Total, OnlineMatches, Users);
         }
     }
 }

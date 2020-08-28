@@ -3,6 +3,7 @@ import { Route, Switch } from 'react-router';
 import Layout from './components/Layout';
 import Home from './components/Home';
 import GameBoard from './components/GameBoard';
+import Statics from './components/Statics'
 import * as signalR from '@microsoft/signalr'
 import { HubConnectionBuilder, HubConnectionState } from '@microsoft/signalr';
 import './custom.css'
@@ -56,6 +57,7 @@ const App = () => {
   return (
     <Layout connectionStatus={connectionStatus} nickname={user ? user.nickname : ""}>
       <Switch>
+        <Route exact path='/statics' component={(props) => <Statics {...props} connection={connection} />} />
         <Route exact path="/:matchId" component={(props) => <GameBoard {...props} connection={connection} />} />
         <Route exact path='/' component={(props) => <Home {...props} connection={connection} />} />
       </Switch>

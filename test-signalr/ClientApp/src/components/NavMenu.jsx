@@ -22,10 +22,16 @@ const NavMenu = ({ connectionStatus, nickname }) => {
           <Collapse className="d-sm-inline-flex flex-sm-row-reverse" isOpen={collapsed} navbar>
             <ul className="navbar-nav flex-grow">
               <NavItem>
+                {isOnline}
+              </NavItem>
+              <NavItem>
                 {nickname && <NavLink tag={Link} className="text-dark" to="/">Welcome, {nickname}</NavLink>}
               </NavItem>
               <NavItem>
-                {isOnline}
+                {<NavLink tag={Link} className="text-dark" to="/">Home</NavLink>}
+              </NavItem>
+              <NavItem>
+                <NavLink tag={Link} className="text-dark" to="/statics">Statics</NavLink>
               </NavItem>
             </ul>
           </Collapse>
