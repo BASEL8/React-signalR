@@ -28,7 +28,6 @@ const Board = ({ matchData, connection, matchId }) => {
   useEffect(() => {
     if (matchData) {
       setData(matchData);
-      console.log(window.getComputedStyle(bordRef.current).width)
     }
   }, [connection, matchData])
   useEffect(() => {

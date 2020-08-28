@@ -12,7 +12,6 @@ const MatchViewer = ({ connection }) => {
       connection.off("UpdateMatchViewer")
     }
   }, [connection])
-  console.log(viewer);
   return (
     <div>
       <h4>Match viewers</h4>

@@ -20,7 +20,6 @@ const OnlineUsers = ({ connection }) => {
       connection.off("UpdateOnlineUsers");
     }
   }, [connection, users])
-  console.log(users);
   return (
     <div className="col-md-6 col-sm-12 mt-sm-4">
       <h5>Users Online</h5>
