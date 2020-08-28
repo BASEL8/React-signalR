@@ -11,7 +11,6 @@ namespace test_signalr {
     public class Startup {
         public Startup (IConfiguration configuration) {
             Configuration = configuration;
-            Console.WriteLine ("here i am");
         }
 
         public IConfiguration Configuration { get; }

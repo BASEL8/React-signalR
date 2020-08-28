@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'react-router-dom';
 import { ListGroup, ListGroupItem, Button, Badge } from 'reactstrap';
 
 
 
 const OnlineUsers = ({ connection }) => {
-  const history = useHistory();
   const [users, setUsers] = useState([])
   const userId = localStorage.getItem("userId");
   const sendGameRequest = (id) => {
@@ -14,17 +12,16 @@ const OnlineUsers = ({ connection }) => {
 
   useEffect(() => {
     if (connection) {
-      connection.on("updateOnlineUsers", (updatedUsers) => {
+      connection.on("UpdateOnlineUsers", (updatedUsers) => {
         setUsers(updatedUsers);
       });
     }
     return () => {
-      connection.off("updateOnlineUsers");
+      connection.off("UpdateOnlineUsers");
     }
-  }, [connection])
+  }, [connection, users])
   console.log(users);
   return (
-
     <div className="col-md-6 col-sm-12 mt-sm-4">
       <h5>Users Online</h5>
       <ListGroup>

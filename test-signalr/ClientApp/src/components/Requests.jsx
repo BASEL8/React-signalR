@@ -4,8 +4,11 @@ import { Button, ListGroup, ListGroupItem, Badge } from 'reactstrap';
 const Requests = ({ connection }) => {
   const [comingRequest, setComingRequest] = useState([]);
   const AcceptChallenge = (matchId) => {
-    connection.invoke("AcceptGameRequest", matchId);
+    connection.invoke("AcceptGameRequest", matchId).catch(err => console.log(err));
   }
+  const RemovePlayRequests = (matchId) => {
+    connection.invoke("RemovePlayRequests", matchId).catch(err => console.log(err));
+  };
   useEffect(() => {
     if (connection) {
       connection.invoke("UsersMatchRequests").catch(err => console.log(err));
@@ -35,7 +38,7 @@ const Requests = ({ connection }) => {
           </div>
           <div>
             <Button size="sm" color="success" className="mr-2" onClick={() => AcceptChallenge(request.matchId)}>Accept</Button>
-            <Button size="sm" color="warning">Decline</Button>
+            <Button size="sm" color="warning" onClick={() => RemovePlayRequests(request.matchId)}>Decline</Button>
           </div>
         </ListGroupItem>
       )}

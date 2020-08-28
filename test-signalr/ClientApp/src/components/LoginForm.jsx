@@ -6,13 +6,9 @@ const LoginForm = ({ connection, token, userId }) => {
   const [error, setError] = useState("");
   const handleSignup = (event) => {
     event.preventDefault();
-    connection.invoke("LoginOrSignup", nickname, token, userId).catch(error => console.log(error))
+    connection.invoke("LoginOrSignup", nickname, token, userId).catch(err => console.log(err))
   };
 
-  const handleNewAccount = () => {
-    localStorage.removeItem("userId");
-    localStorage.removeItem("token");
-  }
 
   if (connection) {
     connection.on("SignupError", (err) => {

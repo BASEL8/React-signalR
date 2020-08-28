@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Route } from 'react-router';
+import { Route, Switch } from 'react-router';
 import Layout from './components/Layout';
 import Home from './components/Home';
 import GameBoard from './components/GameBoard';
@@ -33,7 +33,7 @@ const App = () => {
   }, [connection, userId, token])
   useEffect(() => {
     if (connection) {
-      connection.on("SignupSuccess", (user, token) => {
+      connection.on("SignupSuccess", (user) => {
         localStorage.setItem("token", user.token);
         localStorage.setItem("userId", user.userId);
         setUser(user);
@@ -44,17 +44,21 @@ const App = () => {
         localStorage.setItem("token", user.token);
       });
       connection.on("ClearLocalStorage", (err) => {
-        console.log(err);
         localStorage.removeItem("userId");
         localStorage.removeItem("token");
         setReRender(!reRender);
       })
+      connection.on("disconnected", () => {
+        setReRender(!reRender);
+      })
     }
-  }, [connection])
+  }, [connection, reRender])
   return (
     <Layout connectionStatus={connectionStatus} nickname={user ? user.nickname : ""}>
-      <Route exact path='/' component={(props) => <Home {...props} connection={connection} />} />
-      <Route exact path="/:matchId" component={(props) => <GameBoard connection={connection} />} />
+      <Switch>
+        <Route exact path="/:matchId" component={(props) => <GameBoard {...props} connection={connection} />} />
+        <Route exact path='/' component={(props) => <Home {...props} connection={connection} />} />
+      </Switch>
     </Layout>
   );
 }
