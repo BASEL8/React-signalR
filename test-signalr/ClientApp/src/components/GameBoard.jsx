@@ -56,7 +56,6 @@ const GameBoard = ({ connection }) => {
       }
     }
   }, [connection])
-  console.log(matchInformation)
   if (!matchInformation) {
     return (
       <div>...waiting</div>
