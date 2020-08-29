@@ -6,8 +6,8 @@ import Board from './Board';
 const GameBoard = ({ connection }) => {
   const { matchId } = useParams();
   const [matchInformation, setMatchInformation] = useState();
-  const [matchDrawEnd, setMatchDrawEnd] = useState(false);
-  const [matchWinner, setMatchWinner] = useState("");
+  //  const [matchDrawEnd, setMatchDrawEnd] = useState(false);
+  // const [matchWinner, setMatchWinner] = useState("");
   const [playAgainMessage, setPlayAgain] = useState("");
   const [playersHistory, setPlayersHistory] = useState([]);
   const history = useHistory();
@@ -24,8 +24,6 @@ const GameBoard = ({ connection }) => {
       connection.on("MatchInformation", (_matchInformation) => {
         if (_matchInformation) {
           setMatchInformation(_matchInformation)
-          setMatchDrawEnd(false);
-          setMatchWinner("");
           setPlayAgain("");
         }
       })
@@ -41,17 +39,14 @@ const GameBoard = ({ connection }) => {
       connection.on("NoSuchMatch", () => {
         history.push("/");
       });
-      connection.on("Draw", (_end) => {
-        setMatchDrawEnd(_end)
-      });
-      connection.on("Winner", (winner) => {
-        setMatchWinner(winner)
-      });
       connection.on("PlayersHistory", (WinHistory, Draw) => {
         if (Array.isArray(WinHistory)) {
           let unique = [...new Set(WinHistory)];
           let result = unique.map(value => { return { [value]: WinHistory.filter(str => str === value).length } });
-          result.push({ Draw });
+
+          if (Draw > 0) {
+            result.push({ Draw });
+          }
           setPlayersHistory(result);
         }
       });
@@ -64,8 +59,7 @@ const GameBoard = ({ connection }) => {
         connection.off("UserLeaveGame");
         connection.off("NoSuchMatch");
         connection.off("RequestReject");
-        connection.off("Draw");
-        connection.off("Winner");
+        connection.off("PlayersHistory");
       }
     }
   }, [connection])
@@ -76,8 +70,8 @@ const GameBoard = ({ connection }) => {
   }
   let totalGames = 0;
   const userIsNotViewer = matchInformation && ((matchInformation.creator.userId === userId) || (matchInformation.opponent.userId === userId));
-  const MatchWinnerComponent = (matchWinner || matchInformation.end) && <h3>We Have A Winner {matchWinner}</h3>;
-  const MatchDrawComponent = matchDrawEnd && <h3>Draw</h3>
+  const MatchWinnerComponent = matchInformation.winner && <h3>We Have A Winner, {matchInformation.winner}</h3>;
+  const MatchDrawComponent = matchInformation.draw && <h3>Draw</h3>
   const PlayAgainComponent = userIsNotViewer && matchInformation.end
     &&
     <div className="d-flex algin-items-center"><Button size="sm" color="success" className="mr-2" onClick={handlePlayAgain}>play agin</Button> <Button size="sm" color="warning" onClick={handleLeaveMatch}>Leave</Button></div>
@@ -103,18 +97,20 @@ const GameBoard = ({ connection }) => {
           <div className="mt-2 mb-2 border-top border-bottom flex-grow-1 p-3">
             <h3 className="mt-2 mb-2">Players History</h3>
             {
-              playersHistory.map((obj, index) => {
+              playersHistory.length > 0 ? playersHistory.map((obj, index) => {
                 for (const key in obj) {
                   if (obj.hasOwnProperty(key)) {
                     totalGames += parseInt(obj[key]);
                     return (
                       <div key={index}>
-                        <p>{key} : {obj[key]} {key != "Draw" ? "wins" : ""}</p>
+                        <p>{key} : {obj[key]} {key !== "Draw" ? "wins" : ""}</p>
                       </div>
                     )
                   }
+                  return null;
                 }
-              })
+              }) :
+                <p>First match together!</p>
             }
             {totalGames > 0 && <p>total games : {totalGames}</p>}
           </div>

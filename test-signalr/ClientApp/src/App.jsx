@@ -24,6 +24,7 @@ const App = () => {
         .build());
     }
     if (connection && connection.state !== HubConnectionState.Connected) {
+      setConnectionStatus(false);
       connection.start().then(res => {
         setConnectionStatus(true);
         if (userId && token) {
@@ -47,9 +48,6 @@ const App = () => {
       connection.on("ClearLocalStorage", (err) => {
         localStorage.removeItem("userId");
         localStorage.removeItem("token");
-        setReRender(!reRender);
-      })
-      connection.on("disconnected", () => {
         setReRender(!reRender);
       })
     }

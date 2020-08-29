@@ -17,7 +17,6 @@ const Statics = ({ connection }) => {
       }
     }
   }, [connection])
-  //console.log(state);
   return (
     <div className="h-100 flex-grow-1 d-flex flex-column">
       <h3 className="text-center">Statics</h3>
@@ -33,8 +32,8 @@ const Statics = ({ connection }) => {
               <ListGroupItem key={index} className="d-flex align-items-center justify-content-between">
                 <div>
                   <div>
-                    {user.nickname}, wants to Challenge You
-          </div>
+                    {user.nickname}
+                  </div>
                   <div>
                     w : <Badge color="success">{user.timesOfWins}</Badge> ,
                     L : <Badge color="danger">{user.matchPlayed - user.draws - user.timesOfWins}</Badge> ,

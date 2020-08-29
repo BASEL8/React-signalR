@@ -36,14 +36,13 @@ namespace test_signalr.Hubs {
             public List<OnlineUser> MatchViewers = new List<OnlineUser> ();
             public List<string> WinnersHistory = new List<string> ();
             public int DrawCount { set; get; }
+            public bool Draw { set; get; }
 
         }
         public static class GameData {
             public static List<User> Users = new List<User> ();
             public static List<OnlineUser> OnLineUsers = new List<OnlineUser> ();
             public static List<Match> Matches = new List<Match> ();
-            public static int AllGamesCount;
-            public static int AllOnlineGamesCount;
         }
         public string CalcWinner (string[] squares) {
             int[, ] lines = { { 0, 1, 2 },
@@ -94,7 +93,6 @@ namespace test_signalr.Hubs {
                 _onlineUser.Nickname = user.Nickname;
                 _onlineUser.UserId = user.UserId;
                 _onlineUser.TimesOfWins = user.TimesOfWins;
-                _onlineUser.MatchPlayed = user.MatchPlayed;
                 GameData.OnLineUsers.Add (_onlineUser);
                 await Groups.AddToGroupAsync (user.Token, "OnLineUsers");
                 await Clients.Group ("OnLineUsers").SendAsync ("UpdateOnlineUsers", GameData.OnLineUsers);
@@ -108,7 +106,6 @@ namespace test_signalr.Hubs {
                 //update token
                 int index = GameData.Users.FindIndex (user => user.UserId.Equals (userId));
                 if (index > -1 && GameData.Users[index].Token.Equals (token)) {
-                    //await Clients.Client (Context.ConnectionId).SendAsync ("UserNickname", GameData.Users[index].Nickname);
                     //update the current token 
                     GameData.Users[index].Token = Context.ConnectionId;
                     Match inGameAsCreator = GameData.Matches.Find (match => match.Creator.UserId == userId);
@@ -155,7 +152,6 @@ namespace test_signalr.Hubs {
                         matchRequest.Nickname = MatchCreator.Nickname;
                         matchRequest.UserId = MatchCreator.UserId;
                         matchRequest.TimesOfWins = MatchCreator.TimesOfWins;
-                        matchRequest.MatchPlayed = MatchCreator.MatchPlayed;
                         Guid guid = Guid.NewGuid ();
                         string id = guid.ToString ();
                         matchRequest.MatchId = id;
@@ -193,19 +189,14 @@ namespace test_signalr.Hubs {
                 currentMatch.Started = true;
                 currentMatch.End = false;
                 currentMatch.Turn = currentMatch.Creator.Nickname;
-                GameData.AllGamesCount++;
-                GameData.AllOnlineGamesCount++;
-                List<Match> _matches = GameData.Matches.FindAll (match => match.Started == true && match.End == false);
                 RemoveUserFromOnline ();
-
+                List<Match> _matches = GameData.Matches.FindAll (match => match.Started == true && match.End == false);
                 await Groups.AddToGroupAsync (Context.ConnectionId, matchId);
                 await Clients.Client (Context.ConnectionId).SendAsync ("GameCreated", matchId);
                 await Clients.Group (matchId).SendAsync ("MatchInformation", currentMatch);
                 await Clients.Group ("OnLineUsers").SendAsync ("UpdateOnlineMatches", _matches);
-                User _creator = GameData.Users.Find (user => user.UserId == currentMatch.Creator.UserId);
-                User _opponent = GameData.Users.Find (user => user.UserId == currentMatch.Opponent.UserId);
-                _creator.MatchPlayed++;
-                _opponent.MatchPlayed++;
+                //User _creator = GameData.Users.Find (user => user.UserId == currentMatch.Creator.UserId);
+                //User _opponent = GameData.Users.Find (user => user.UserId == currentMatch.Opponent.UserId);
                 await PlayersHistory (matchId);
             } else {
                 OnlineUser _onlineplayer = GameData.OnLineUsers.Find (user => user.Token == Context.ConnectionId);
@@ -219,7 +210,6 @@ namespace test_signalr.Hubs {
             Match _match = GameData.Matches.Find (match => match.MatchId == matchId);
             User AuthAsCreator = GameData.Users.Find (user => user.UserId == _match.Creator.UserId && user.Token == Context.ConnectionId);
             User AuthAsOpponent = GameData.Users.Find (user => user.UserId == _match.Opponent.UserId && user.Token == Context.ConnectionId);
-            GameData.AllOnlineGamesCount--;
             if (_match != null) {
                 if (AuthAsCreator != null || AuthAsOpponent != null) {
                     User _creator = GameData.Users.Find (user => user.UserId == _match.Creator.UserId);
@@ -298,7 +288,6 @@ namespace test_signalr.Hubs {
                 if (matchRequestIndex > -1) {
                     _opponent.MatchRequests.RemoveAt (matchRequestIndex);
                     GameData.Matches.RemoveAt (index);
-                    GameData.AllOnlineGamesCount--;
                     string _opponentToken = GameData.Users.Find (user => user.UserId == _opponent.UserId).Token;
                     await Clients.Client (_opponentToken).SendAsync ("GameRequest", _opponent.MatchRequests);
                 }
@@ -338,12 +327,11 @@ namespace test_signalr.Hubs {
                 }
             }
         }
-
         public async Task CheckUsersMove (int index, string matchId) {
             User _user = GameData.Users.Find (user => user.Token == Context.ConnectionId);
             Match _match = GameData.Matches.Find (match => match.MatchId == matchId);
             if (_user != null && _match != null && (_match.Creator.UserId == _user.UserId || _match.Opponent.UserId == _user.UserId)) {
-                if (!_match.End) {
+                if (!_match.End && _match.Started) {
                     if (_match.MatchData[index] == "") {
                         bool userIsCreator = _match.Creator.UserId == _user.UserId;
                         User _opponent = !userIsCreator? GameData.Users.Find (user => user.UserId == _match.Creator.UserId) : GameData.Users.Find (user => user.UserId == _match.Opponent.UserId);
@@ -357,17 +345,18 @@ namespace test_signalr.Hubs {
                                 .ToList ();
                             string winner = CalcWinner (_match.MatchData);
                             if (!String.IsNullOrEmpty (winner)) {
-                                _match.Winner = _user.UserId;
+                                _match.Winner = _user.Nickname;
                                 _match.WinnersHistory.Add (_user.Nickname);
                                 _user.TimesOfWins++;
                                 _match.End = true;
-                                await Clients.Group (_match.MatchId).SendAsync ("Winner", _user.Nickname);
+                                //await Clients.Group (_match.MatchId).SendAsync ("Winner", _user.Nickname);
                             } else if (emptyIndexes.Count == 0) {
                                 _user.Draws++;
                                 _opponent.Draws++;
                                 _match.DrawCount++;
                                 _match.End = true;
-                                await Clients.Group (_match.MatchId).SendAsync ("Draw", true);
+                                _match.Draw = true;
+                                //await Clients.Group (_match.MatchId).SendAsync ("Draw", true);
                             }
                             await Clients.Group (_match.MatchId).SendAsync ("MatchInformation", _match);
                         }
@@ -417,12 +406,9 @@ namespace test_signalr.Hubs {
                                 _match.End = false;
                                 _match.Turn = opponent.Nickname;
                                 _match.Winner = null;
-                                opponent.MatchPlayed++;
+                                _match.Draw = false;
                                 opponent.PlayAgain = false;
                                 creator.PlayAgain = false;
-                                creator.MatchPlayed++;
-                                GameData.AllGamesCount++;
-                                GameData.AllOnlineGamesCount++;
                                 await Clients.Group (_match.MatchId).SendAsync ("MatchInformation", _match);
                                 await PlayersHistory (_match.MatchId);
                             }
@@ -437,12 +423,9 @@ namespace test_signalr.Hubs {
                                 _match.End = false;
                                 _match.Turn = creator.Nickname;
                                 _match.Winner = null;
-                                opponent.MatchPlayed++;
-                                creator.MatchPlayed++;
+                                _match.Draw = false;
                                 creator.PlayAgain = false;
                                 opponent.PlayAgain = false;
-                                GameData.AllGamesCount++;
-                                GameData.AllOnlineGamesCount++;
                                 await Clients.Group (_match.MatchId).SendAsync ("MatchInformation", _match);
                                 await PlayersHistory (_match.MatchId);
                             }
@@ -454,8 +437,8 @@ namespace test_signalr.Hubs {
         public async Task GeneralInformation () {
             //The global statics should show the total amount of games played in the system
             //It should have a list of players saying how many games they won, lost and draw
-            int Total = GameData.AllGamesCount;
-            int OnlineMatches = GameData.Matches.FindAll (match => match.Started && match.End).Count;
+            int Total = GameData.Matches.Count;
+            int OnlineMatches = GameData.Matches.FindAll (match => match.Started && !match.End).Count;
             List<User> Users = new List<User> () { };
 
             foreach (var user in GameData.Users) {
@@ -463,7 +446,7 @@ namespace test_signalr.Hubs {
                 _user.Nickname = user.Nickname;
                 _user.TimesOfWins = user.TimesOfWins;
                 _user.Draws = user.Draws;
-                _user.MatchPlayed = user.MatchPlayed;
+                _user.MatchPlayed = GameData.Matches.FindAll (match => match.End && (match.Creator.UserId == user.UserId || match.Opponent.UserId == user.UserId)).Count;
                 Users.Add (_user);
             }
             await Clients.Client (Context.ConnectionId).SendAsync ("Statics", Total, OnlineMatches, Users);
